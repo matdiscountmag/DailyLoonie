@@ -782,6 +782,11 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .qty-stepper.zero { border-color: var(--rule); }
 .qty-stepper.zero .q { color: var(--ink-4); }
+.qty-stepper:not(.zero) {
+  background: var(--positive-soft);
+  border-color: var(--positive);
+}
+.qty-stepper:not(.zero) .q { color: var(--positive); font-weight: 600; }
 
 /* cart summary */
 .cart-summary {

@@ -650,7 +650,7 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
               const cheapestPrice = Math.min(...opts.map(o => o.price));
               const chosen = manualChoices[p.productId] || p.cheapestBanner;
               return (
-                <div className={`cart-product${qty > 0 ? ' in-cart' : ''}`} key={p.productId}>
+                <div className="cart-product" key={p.productId}>
                   <div className="info">
                     <div className="cart-prod-hd">
                       <StarBtn pid={p.productId} starred={starred} onToggle={onStarToggle} />
