@@ -33,7 +33,7 @@ html, body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--sans);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -54,7 +54,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .label {
   font-family: var(--sans);
-  font-size: 11px;
+  font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-weight: 500;
@@ -94,14 +94,14 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .masthead .meta {
   text-align: right;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--ink-3);
   line-height: 1.5;
 }
 .masthead .meta .label { display: block; margin-bottom: 4px; }
 .masthead .meta .edition {
   font-family: var(--serif);
-  font-size: 18px;
+  font-size: 19px;
   color: var(--ink);
   font-style: italic;
 }
@@ -122,7 +122,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .tabs::-webkit-scrollbar { display: none; }
 .tab {
   font-family: var(--sans);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   padding: 12px 18px 14px;
   color: var(--ink-3);
@@ -141,13 +141,13 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .tab .count {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 13px;
   color: var(--ink-4);
   font-weight: 400;
 }
 .tab.active .count { color: var(--accent); }
 @media (max-width: 720px) {
-  .tab { padding: 10px 14px 12px; font-size: 12px; }
+  .tab { padding: 10px 14px 12px; font-size: 14px; }
 }
 
 /* ----- section lede ----- */
@@ -173,7 +173,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   margin: 0;
   color: var(--ink-2);
   max-width: 640px;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.55;
 }
 @media (max-width: 720px) {
@@ -215,7 +215,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .search input::placeholder { color: var(--ink-4); font-style: italic; }
 .search .k {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 13px;
   color: var(--ink-4);
 }
 
@@ -226,7 +226,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   align-items: center;
 }
 .chip {
-  font-size: 12px;
+  font-size: 14px;
   padding: 5px 11px;
   border: 1px solid var(--rule-strong);
   color: var(--ink-2);
@@ -246,13 +246,13 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .chip .n {
   font-family: var(--mono);
   opacity: 0.5;
-  font-size: 11px;
+  font-size: 13px;
   margin-left: 4px;
 }
 .chip.active .n { opacity: 0.7; }
 
 .sort-select {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--ink-2);
   border: 0;
   background: transparent;
@@ -282,7 +282,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .compare thead th {
   font-weight: 500;
-  font-size: 11px;
+  font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--ink-3);
@@ -300,7 +300,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .compare .prod-name {
   font-family: var(--serif);
-  font-size: 18px;
+  font-size: 19px;
   line-height: 1.2;
   font-weight: 400;
   letter-spacing: -0.005em;
@@ -309,7 +309,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .compare .prod-name em { font-style: italic; }
 .compare .prod-meta {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--ink-3);
   line-height: 1.4;
 }
@@ -317,7 +317,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   font-family: var(--sans);
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--ink-2);
   font-weight: 600;
   margin-right: 6px;
@@ -329,7 +329,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .price {
   font-family: var(--mono);
-  font-size: 16px;
+  font-size: 17px;
   font-variant-numeric: tabular-nums;
   color: var(--ink);
   font-weight: 500;
@@ -354,21 +354,21 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .was {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 13px;
   color: var(--ink-4);
   text-decoration: line-through;
   margin-top: 2px;
 }
 .unit {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 12px;
   color: var(--ink-3);
   margin-top: 2px;
   letter-spacing: 0.02em;
 }
 .deal-tag {
   display: inline-block;
-  font-size: 9.5px;
+  font-size: 11px;
   font-family: var(--sans);
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -383,7 +383,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .deal-tag.multi { color: var(--ink-2); border-color: var(--ink-2); }
 .deal-tag.limit { color: var(--warn); border-color: var(--warn); }
 .deal-expiry {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--ink-3);
   margin-top: 3px;
   font-style: italic;
@@ -391,7 +391,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 
 .trend {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 12px;
   margin-top: 3px;
   letter-spacing: 0;
 }
@@ -410,7 +410,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .na {
   color: var(--ink-4);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 14px;
 }
 
 /* add button */
@@ -420,7 +420,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   justify-content: center;
   width: 20px; height: 20px;
   font-family: var(--mono);
-  font-size: 14px;
+  font-size: 15px;
   color: var(--ink-4);
   border: 1px solid var(--rule-strong);
   border-radius: 50%;
@@ -461,7 +461,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .deal-feature:last-child { border-right: 0; }
 .deal-feature .kicker {
-  font-size: 10px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.14em;
   color: var(--accent);
@@ -476,7 +476,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .deal-feature .headline em { font-style: italic; }
 .deal-feature .deck {
-  font-size: 13px;
+  font-size: 15px;
   color: var(--ink-2);
   line-height: 1.5;
 }
@@ -495,7 +495,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   color: var(--accent);
   letter-spacing: -0.02em;
 }
-.deal-feature .stat .label { font-size: 10px; }
+.deal-feature .stat .label { font-size: 12px; }
 
 @media (max-width: 900px) {
   .deals-lead { grid-template-columns: 1fr; }
@@ -523,18 +523,18 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .deal-row:nth-child(2n) { border-right: 0; }
 .deal-row .rank {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 13px;
   color: var(--ink-4);
   margin-right: 8px;
 }
 .deal-row .name {
   font-family: var(--serif);
-  font-size: 18px;
+  font-size: 19px;
   line-height: 1.2;
   margin-bottom: 3px;
 }
 .deal-row .sub {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--ink-3);
   font-family: var(--sans);
 }
@@ -543,7 +543,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   letter-spacing: 0.08em;
   font-weight: 600;
   color: var(--ink-2);
-  font-size: 10px;
+  font-size: 12px;
 }
 .deal-row .sub .sep { margin: 0 6px; color: var(--ink-4); }
 .deal-row .right { text-align: right; white-space: nowrap; }
@@ -556,7 +556,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .deal-row .prices {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 13px;
   color: var(--ink-3);
   margin-top: 2px;
 }
@@ -592,8 +592,9 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   align-items: center;
 }
 .cart-product .info .name {
-  font-family: var(--serif);
-  font-size: 19px;
+  font-family: var(--sans);
+  font-size: 16px;
+  font-weight: 500;
   line-height: 1.3;
 }
 .cart-product .info .banners {
@@ -601,7 +602,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   gap: 8px 16px;
   flex-wrap: wrap;
   margin-top: 8px;
-  font-size: 13px;
+  font-size: 15px;
 }
 .cart-product .info .banners .opt {
   display: inline-flex;
@@ -618,7 +619,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   border-bottom-color: var(--ink);
   font-weight: 500;
 }
-.cart-product .info .banners .opt .p { font-family: var(--mono); font-size: 13px; }
+.cart-product .info .banners .opt .p { font-family: var(--mono); font-size: 15px; }
 .cart-product .info .banners .opt.cheapest .p { color: var(--accent); }
 
 .qty-stepper {
@@ -632,13 +633,13 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .qty-stepper button {
   width: 26px; height: 28px;
   font-family: var(--mono);
-  font-size: 14px;
+  font-size: 15px;
   color: var(--ink-2);
 }
 .qty-stepper button:hover { color: var(--ink); }
 .qty-stepper .q {
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: 15px;
   min-width: 14px;
   text-align: center;
   color: var(--ink);
@@ -665,7 +666,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .clear-cart-btn {
   font-family: var(--sans);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: .04em;
   text-transform: uppercase;
@@ -704,7 +705,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   letter-spacing: -0.02em;
 }
 .cart-summary .grand .sub {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--ink-3);
   font-weight: 400;
   display: block;
@@ -719,7 +720,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .cart-summary .mode-toggle button {
   flex: 1;
   padding: 8px 6px;
-  font-size: 11px;
+  font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--ink-3);
@@ -751,7 +752,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .split-bucket .banner-name {
   font-family: var(--sans);
-  font-size: 11px;
+  font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   font-weight: 600;
@@ -759,17 +760,17 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .split-bucket .subtotal {
   font-family: var(--mono);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
 }
 .split-bucket .gap-msg {
-  font-size: 10.5px;
+  font-size: 12px;
   color: var(--warn);
   font-style: italic;
   margin-top: 4px;
 }
 .split-bucket .ok-msg {
-  font-size: 10.5px;
+  font-size: 12px;
   color: var(--positive);
   font-style: italic;
   margin-top: 4px;
@@ -779,7 +780,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  font-size: 12px;
+  font-size: 14px;
   padding: 3px 0;
   color: var(--ink-2);
 }
@@ -794,7 +795,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .item-premium {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 12px;
   color: var(--ink-4);
   letter-spacing: .01em;
 }
@@ -806,12 +807,12 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   font-style: italic;
   color: var(--ink-3);
   font-family: var(--serif);
-  font-size: 18px;
+  font-size: 19px;
 }
 .empty-cart .hint {
   font-family: var(--sans);
   font-style: normal;
-  font-size: 11px;
+  font-size: 13px;
   color: var(--ink-4);
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -823,7 +824,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   padding: 10px 12px;
   background: var(--positive-soft);
   border-left: 2px solid var(--positive);
-  font-size: 11.5px;
+  font-size: 13px;
   color: var(--ink-2);
   line-height: 1.4;
 }
@@ -849,7 +850,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   text-align: center;
   color: var(--accent);
   font-family: var(--sans);
-  font-size: 14px;
+  font-size: 15px;
   border: 1px solid var(--accent);
   background: var(--accent-soft);
 }
@@ -858,7 +859,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   margin-top: 80px;
   padding-top: 20px;
   border-top: 1px solid var(--rule);
-  font-size: 11px;
+  font-size: 13px;
   color: var(--ink-4);
   font-family: var(--sans);
   text-transform: uppercase;
