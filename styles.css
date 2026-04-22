@@ -611,7 +611,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   padding: 2px 0;
   cursor: pointer;
 }
-.cart-product .info .banners .opt.chosen { font-weight: 600; }
+.cart-product .info .banners .opt.chosen:not(.cheapest) { font-weight: 600; }
 .cart-product .info .banners .opt.cheapest { color: var(--accent); }
 .cart-product .info .banners .opt .p { font-family: var(--mono); font-size: 15px; }
 .opt-premium {
