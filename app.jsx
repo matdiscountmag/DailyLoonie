@@ -286,7 +286,7 @@ function DealsView({ model }) {
 }
 
 // ---------- Cart Builder ----------
-function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode, setMode }) {
+function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode, setMode, onClear }) {
   const { products, banners } = model;
   const MIN_CART = 30;
 
@@ -453,7 +453,12 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
       </div>
 
       <div className="cart-summary">
-        <h3>Summary</h3>
+        <div className="summary-header">
+          <h3>Summary</h3>
+          {cartProducts.length > 0 && (
+            <button className="clear-cart-btn" onClick={onClear}>Clear cart</button>
+          )}
+        </div>
         <div className="totals-lead">
           <div>
             <div className="label">Grand total</div>
@@ -550,6 +555,11 @@ function App() {
     });
   }
 
+  function clearCart() {
+    setCart({});
+    setManualChoices({});
+  }
+
   if (err) return <div className="page"><div className="error">Couldn't load data — {err}<br/>Tip: serve this page over http (not file://), since it fetches CSV at runtime.</div></div>;
   if (!model) return <div className="page"><div className="loading">Loading this week's prices…</div></div>;
 
@@ -627,6 +637,7 @@ function App() {
           model={model}
           cart={cart}
           setCart={setCart}
+          onClear={clearCart}
           manualChoices={manualChoices}
           setManualChoices={setManualChoices}
           mode={mode}
