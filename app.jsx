@@ -30,6 +30,24 @@ function bannerAbbr(b) {
   })[b] || b.slice(0,3).toUpperCase();
 }
 
+// ---------- Star button ----------
+const STAR_PATH = 'M8,1 L9.8,5.6 L14.7,5.8 L10.9,8.9 L12.1,13.7 L8,11 L3.9,13.7 L5.2,8.9 L1.3,5.8 L6.2,5.6Z';
+function StarBtn({ pid, starred, onToggle }) {
+  const on = starred.has(pid);
+  return (
+    <button
+      className={`star-btn${on ? ' on' : ''}`}
+      onClick={e => { e.stopPropagation(); onToggle(pid); }}
+      aria-label={on ? 'Unstar' : 'Star'}
+      title={on ? 'Unstar' : 'Star'}
+    >
+      <svg width="14" height="14" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d={STAR_PATH} />
+      </svg>
+    </button>
+  );
+}
+
 // ---------- Price history chart setup ----------
 const PH_COLORS = {
   'No Frills':                '#D4600A',
@@ -233,8 +251,10 @@ function PriceCell({ entry, prevEntry, isCheapest, series }) {
 }
 
 // ---------- Compare Table ----------
-function CompareTable({ model, filter, search, cart, onToggle, sort }) {
+function CompareTable({ model, filter, search, cart, onToggle, sort, starred, onStarToggle }) {
   const { banners, products } = model;
+  const [tsOpen, setTsOpen] = useState(true);
+  const [toOpen, setToOpen] = useState(true);
 
   let visible = products.slice();
   if (search) {
@@ -267,6 +287,59 @@ function CompareTable({ model, filter, search, cart, onToggle, sort }) {
     visible.sort((a,b) => (a.title||'').localeCompare(b.title||''));
   }
 
+  const hasGroups = starred.size > 0;
+  const starredList = hasGroups ? visible.filter(p => starred.has(p.productId)) : [];
+  const otherList   = hasGroups ? visible.filter(p => !starred.has(p.productId)) : visible;
+
+  function renderRow(p) {
+    return (
+      <tr key={p.productId}>
+        <td className="prod-cell">
+          <div className="prod-hd">
+            <StarBtn pid={p.productId} starred={starred} onToggle={onStarToggle} />
+            <div>
+              <div className="prod-name">{p.title}</div>
+              <div className="prod-meta">
+                {p.brand && <span className="brand">{p.brand}</span>}
+                <span>{p.size}{p.unit ? ' · ' + p.unit : ''}</span>
+              </div>
+              <button
+                className={`add-btn ${cart[p.productId] ? 'added' : ''}`}
+                onClick={() => onToggle(p.productId)}
+                title={cart[p.productId] ? 'Remove from cart' : 'Add to cart'}
+              >
+                {cart[p.productId] ? '✓' : '+'}
+              </button>
+            </div>
+          </div>
+        </td>
+        {banners.map(b => (
+          <td key={b} className="banner-cell">
+            <PriceCell
+              entry={p.current[b]}
+              prevEntry={p.previous[b]}
+              isCheapest={p.cheapestBanner === b}
+              series={p.series[b]}
+            />
+          </td>
+        ))}
+      </tr>
+    );
+  }
+
+  function renderGroupHdr(label, count, open, onToggle) {
+    return (
+      <tr className="group-hdr-row" key={`hdr-${label}`}>
+        <td colSpan={banners.length + 1}>
+          <button className={`group-hdr${open ? ' open' : ''}`} onClick={onToggle}>
+            <span>{label} <span className="group-count">({count})</span></span>
+            <span className="group-chev">▾</span>
+          </button>
+        </td>
+      </tr>
+    );
+  }
+
   return (
     <div className="compare-wrap">
       <table className="compare">
@@ -279,34 +352,16 @@ function CompareTable({ model, filter, search, cart, onToggle, sort }) {
           </tr>
         </thead>
         <tbody>
-          {visible.map(p => (
-            <tr key={p.productId}>
-              <td className="prod-cell">
-                <div className="prod-name">{p.title}</div>
-                <div className="prod-meta">
-                  {p.brand && <span className="brand">{p.brand}</span>}
-                  <span>{p.size}{p.unit ? ' · ' + p.unit : ''}</span>
-                </div>
-                <button
-                  className={`add-btn ${cart[p.productId] ? 'added' : ''}`}
-                  onClick={() => onToggle(p.productId)}
-                  title={cart[p.productId] ? 'Remove from cart' : 'Add to cart'}
-                >
-                  {cart[p.productId] ? '✓' : '+'}
-                </button>
-              </td>
-              {banners.map(b => (
-                <td key={b} className="banner-cell">
-                  <PriceCell
-                    entry={p.current[b]}
-                    prevEntry={p.previous[b]}
-                    isCheapest={p.cheapestBanner === b}
-                    series={p.series[b]}
-                  />
-                </td>
-              ))}
-            </tr>
-          ))}
+          {hasGroups ? (
+            <>
+              {renderGroupHdr('★ Starred', starredList.length, tsOpen, () => setTsOpen(o => !o))}
+              {tsOpen && starredList.map(renderRow)}
+              {renderGroupHdr('Other', otherList.length, toOpen, () => setToOpen(o => !o))}
+              {toOpen && otherList.map(renderRow)}
+            </>
+          ) : (
+            visible.map(renderRow)
+          )}
           {!visible.length && (
             <tr><td colSpan={banners.length + 1} style={{padding: '40px', textAlign: 'center', color: 'var(--ink-3)', fontStyle: 'italic'}}>No products match.</td></tr>
           )}
@@ -423,12 +478,14 @@ function DealsView({ model }) {
 // ---------- Cart Builder ----------
 const PICKER_ORDER = ['No Frills', 'Real Canadian Superstore', 'Loblaws', 'Independent City Market'];
 
-function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode, setMode, onClear }) {
+function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode, setMode, onClear, starred, onStarToggle }) {
   const { products, banners } = model;
   const MIN_CART = 30;
   const [collapsed, setCollapsed] = useState(new Set());
   const [historyPid, setHistoryPid] = useState(null);
   const [historyAnchorRect, setHistoryAnchorRect] = useState(null);
+  const [csOpen, setCsOpen] = useState(true);
+  const [coOpen, setCoOpen] = useState(true);
 
   function toggleCollapse(banner) {
     setCollapsed(prev => { const n = new Set(prev); n.has(banner) ? n.delete(banner) : n.add(banner); return n; });
@@ -580,56 +637,87 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
         </div>
 
         <div className="cart-picker">
-          {products.map(p => {
-            const qty = cart[p.productId] || 0;
-            const opts = model.banners.map(b => ({ b, price: p.current[b]?.price }))
-              .filter(o => o.price != null)
-              .sort((a, b) => {
-                const ia = PICKER_ORDER.indexOf(a.b), ib = PICKER_ORDER.indexOf(b.b);
-                return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
-              });
-            if (!opts.length) return null;
-            const cheapestPrice = Math.min(...opts.map(o => o.price));
-            const chosen = manualChoices[p.productId] || p.cheapestBanner;
-            return (
-              <div className="cart-product" key={p.productId}>
-                <div className="info">
-                  <div className="name">{p.title}{p.brand ? ` · ${p.brand}` : ''}</div>
-                  <div className="banners">
-                    {opts.map(({b, price}) => {
-                      const isCheapest = price === cheapestPrice;
-                      const premium = !isCheapest ? price - cheapestPrice : 0;
-                      return (
-                        <span
-                          key={b}
-                          className={`opt ${chosen === b ? 'chosen' : ''} ${isCheapest ? 'cheapest' : ''}`}
-                          onClick={() => mode === 'manual' ? chooseBanner(p.productId, b) : null}
-                          style={{cursor: mode === 'manual' ? 'pointer' : 'default'}}
-                        >
-                          {bannerAbbr(b)} <span className="p">{fmtMoney(price)}</span>
-                          {premium > 0.005 && <span className="opt-premium">+{fmtMoney(premium)}</span>}
-                        </span>
-                      );
-                    })}
+          {(() => {
+            function renderProduct(p) {
+              const qty = cart[p.productId] || 0;
+              const opts = model.banners.map(b => ({ b, price: p.current[b]?.price }))
+                .filter(o => o.price != null)
+                .sort((a, b) => {
+                  const ia = PICKER_ORDER.indexOf(a.b), ib = PICKER_ORDER.indexOf(b.b);
+                  return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+                });
+              if (!opts.length) return null;
+              const cheapestPrice = Math.min(...opts.map(o => o.price));
+              const chosen = manualChoices[p.productId] || p.cheapestBanner;
+              return (
+                <div className="cart-product" key={p.productId}>
+                  <div className="info">
+                    <div className="cart-prod-hd">
+                      <StarBtn pid={p.productId} starred={starred} onToggle={onStarToggle} />
+                      <div>
+                        <div className="name">{p.title}{p.brand ? ` · ${p.brand}` : ''}</div>
+                        <div className="banners">
+                          {opts.map(({b, price}) => {
+                            const isCheapest = price === cheapestPrice;
+                            const premium = !isCheapest ? price - cheapestPrice : 0;
+                            return (
+                              <span
+                                key={b}
+                                className={`opt ${chosen === b ? 'chosen' : ''} ${isCheapest ? 'cheapest' : ''}`}
+                                onClick={() => mode === 'manual' ? chooseBanner(p.productId, b) : null}
+                                style={{cursor: mode === 'manual' ? 'pointer' : 'default'}}
+                              >
+                                {bannerAbbr(b)} <span className="p">{fmtMoney(price)}</span>
+                                {premium > 0.005 && <span className="opt-premium">+{fmtMoney(premium)}</span>}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    className={`cart-hist-btn${historyPid === p.productId ? ' on' : ''}`}
+                    onClick={e => openHistory(p.productId, e)}
+                    title="Price history"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="0.5,11.5 3.5,6.5 6.5,9 9.5,2.5 12.5,5.5"/>
+                    </svg>
+                  </button>
+                  <div className={`qty-stepper ${qty === 0 ? 'zero' : ''}`}>
+                    <button onClick={() => setQty(p.productId, qty - 1)}>−</button>
+                    <span className="q">{qty}</span>
+                    <button onClick={() => setQty(p.productId, qty + 1)}>+</button>
                   </div>
                 </div>
-                <button
-                  className={`cart-hist-btn${historyPid === p.productId ? ' on' : ''}`}
-                  onClick={e => openHistory(p.productId, e)}
-                  title="Price history"
-                >
-                  <svg width="12" height="12" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="0.5,11.5 3.5,6.5 6.5,9 9.5,2.5 12.5,5.5"/>
-                  </svg>
+              );
+            }
+
+            const hasGroups = starred.size > 0;
+            if (!hasGroups) return products.map(renderProduct);
+
+            const starredProds = products.filter(p => starred.has(p.productId));
+            const otherProds   = products.filter(p => !starred.has(p.productId));
+            return (
+              <>
+                <button className={`group-hdr${csOpen ? ' open' : ''}`} onClick={() => setCsOpen(o => !o)}>
+                  <span>★ Starred <span className="group-count">({starredProds.length})</span></span>
+                  <span className="group-chev">▾</span>
                 </button>
-                <div className={`qty-stepper ${qty === 0 ? 'zero' : ''}`}>
-                  <button onClick={() => setQty(p.productId, qty - 1)}>−</button>
-                  <span className="q">{qty}</span>
-                  <button onClick={() => setQty(p.productId, qty + 1)}>+</button>
+                <div className={`cart-group-body${csOpen ? '' : ' closed'}`}>
+                  {starredProds.map(renderProduct)}
                 </div>
-              </div>
+                <button className={`group-hdr${coOpen ? ' open' : ''}`} onClick={() => setCoOpen(o => !o)}>
+                  <span>Other <span className="group-count">({otherProds.length})</span></span>
+                  <span className="group-chev">▾</span>
+                </button>
+                <div className={`cart-group-body${coOpen ? '' : ' closed'}`}>
+                  {otherProds.map(renderProduct)}
+                </div>
+              </>
             );
-          })}
+          })()}
         </div>
         {historyPid && (() => {
           const hp = products.find(x => x.productId === historyPid);
@@ -729,6 +817,10 @@ function App() {
     catch { return {}; }
   });
   const [mode, setMode] = useState(() => localStorage.getItem('dailyloonie_mode_v1') || 'auto');
+  const [starred, setStarred] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('dailyloonie_starred_v1') || '[]')); }
+    catch { return new Set(); }
+  });
 
   useEffect(() => {
     GroceryData.loadData().then(setModel).catch(e => { console.error(e); setErr(String(e)); });
@@ -737,6 +829,7 @@ function App() {
   useEffect(() => { localStorage.setItem('dailyloonie_cart_v1', JSON.stringify(cart)); }, [cart]);
   useEffect(() => { localStorage.setItem('dailyloonie_manual_v1', JSON.stringify(manualChoices)); }, [manualChoices]);
   useEffect(() => { localStorage.setItem('dailyloonie_mode_v1', mode); }, [mode]);
+  useEffect(() => { localStorage.setItem('dailyloonie_starred_v1', JSON.stringify([...starred])); }, [starred]);
 
   function toggleCart(pid) {
     setCart(c => {
@@ -749,6 +842,14 @@ function App() {
   function clearCart() {
     setCart({});
     setManualChoices({});
+  }
+
+  function toggleStar(pid) {
+    setStarred(s => {
+      const n = new Set(s);
+      n.has(pid) ? n.delete(pid) : n.add(pid);
+      return n;
+    });
   }
 
   if (err) return <div className="page"><div className="error">Couldn't load data — {err}<br/>Tip: serve this page over http (not file://), since it fetches CSV at runtime.</div></div>;
@@ -817,7 +918,7 @@ function App() {
               </button>
             ))}
           </div>
-          <CompareTable model={model} filter={filter} search={search} cart={cart} onToggle={toggleCart} sort={sort} />
+          <CompareTable model={model} filter={filter} search={search} cart={cart} onToggle={toggleCart} sort={sort} starred={starred} onStarToggle={toggleStar} />
         </>
       )}
 
@@ -833,6 +934,8 @@ function App() {
           setManualChoices={setManualChoices}
           mode={mode}
           setMode={setMode}
+          starred={starred}
+          onStarToggle={toggleStar}
         />
       )}
 
