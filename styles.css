@@ -611,29 +611,9 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   padding: 2px 0;
   cursor: pointer;
 }
-.cart-product .info .banners .opt.chosen,
-.cart-product .info .banners .opt.cheapest {
-  font-weight: 600;
-}
+.cart-product .info .banners .opt.chosen { font-weight: 600; }
+.cart-product .info .banners .opt.cheapest { color: var(--accent); }
 .cart-product .info .banners .opt .p { font-family: var(--mono); font-size: 15px; }
-.cart-product .info .banners {
-  isolation: isolate;
-}
-.cart-product .info .banners .opt.cheapest {
-  position: relative;
-}
-.cart-product .info .banners .opt.cheapest::before {
-  content: '';
-  position: absolute;
-  inset: -1px -7px;
-  background: linear-gradient(10deg,
-    oklch(89% 0.18 90 / 0.65) 0%,
-    oklch(92% 0.16 90) 28%,
-    oklch(92% 0.16 90) 72%,
-    oklch(89% 0.18 90 / 0.55) 100%);
-  filter: url(#roughen);
-  z-index: -1;
-}
 .opt-premium {
   font-family: var(--mono);
   font-size: 12px;
