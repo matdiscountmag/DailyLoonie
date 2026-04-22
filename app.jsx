@@ -286,9 +286,15 @@ function DealsView({ model }) {
 }
 
 // ---------- Cart Builder ----------
+const PICKER_ORDER = ['No Frills', 'Real Canadian Superstore', 'Loblaws', 'Independent City Market'];
+
 function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode, setMode, onClear }) {
   const { products, banners } = model;
   const MIN_CART = 30;
+  const [collapsed, setCollapsed] = useState(new Set());
+  function toggleCollapse(banner) {
+    setCollapsed(prev => { const n = new Set(prev); n.has(banner) ? n.delete(banner) : n.add(banner); return n; });
+  }
 
   const cartProducts = useMemo(() =>
     products.filter(p => cart[p.productId] > 0).map(p => ({ p, qty: cart[p.productId] }))
@@ -420,7 +426,11 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
           {products.map(p => {
             const qty = cart[p.productId] || 0;
             const opts = model.banners.map(b => ({ b, price: p.current[b]?.price }))
-              .filter(o => o.price != null);
+              .filter(o => o.price != null)
+              .sort((a, b) => {
+                const ia = PICKER_ORDER.indexOf(a.b), ib = PICKER_ORDER.indexOf(b.b);
+                return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+              });
             if (!opts.length) return null;
             const cheapestPrice = Math.min(...opts.map(o => o.price));
             const chosen = manualChoices[p.productId] || p.cheapestBanner;
@@ -479,34 +489,42 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
           <div className="cart-split">
             {buckets.map(({banner, items, subtotal}) => {
               const okMin = subtotal >= MIN_CART;
+              const isCollapsed = collapsed.has(banner);
               return (
-                <div className={`split-bucket ${okMin ? 'ok' : 'warn'}`} key={banner}>
-                  <div className="head">
+                <div className={`split-bucket ${okMin ? 'ok' : 'warn'}${isCollapsed ? ' collapsed' : ''}`} key={banner}>
+                  <div className="head" onClick={() => toggleCollapse(banner)}>
                     <span className="banner-name">{bannerShort(banner)}</span>
-                    <span className="subtotal">{fmtMoney(subtotal)}</span>
+                    <div style={{display:'flex',alignItems:'baseline',gap:8}}>
+                      <span className="subtotal">{fmtMoney(subtotal)}</span>
+                      <span className="bucket-toggle">{isCollapsed ? '+' : '−'}</span>
+                    </div>
                   </div>
-                  <ul>
-                    {items.map(({p, qty, options}) => {
-                      const e = options.find(o => o.banner === banner);
-                      const cheapest = options[0];
-                      const premium = (banner !== cheapest.banner) ? (e.price - cheapest.price) * qty : 0;
-                      return (
-                        <li key={p.productId}>
-                          <span className="nm">{qty}× {p.title}</span>
-                          <span className="n">
-                            {fmtMoney(e.price * qty)}
-                            {premium > 0.005 && (
-                              <span className="item-premium">+{fmtMoney(premium)} vs {bannerAbbr(cheapest.banner)}</span>
-                            )}
-                          </span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                  {okMin ? (
-                    <div className="ok-msg">Meets ${MIN_CART} minimum</div>
-                  ) : (
-                    <div className="gap-msg">${(MIN_CART - subtotal).toFixed(2)} short of minimum</div>
+                  {!isCollapsed && (
+                    <>
+                      <ul>
+                        {items.map(({p, qty, options}) => {
+                          const e = options.find(o => o.banner === banner);
+                          const cheapest = options[0];
+                          const premium = (banner !== cheapest.banner) ? (e.price - cheapest.price) * qty : 0;
+                          return (
+                            <li key={p.productId}>
+                              <span className="nm">{qty}× {p.title}</span>
+                              <span className="n">
+                                {fmtMoney(e.price * qty)}
+                                {premium > 0.005 && (
+                                  <span className="item-premium">+{fmtMoney(premium)} vs {bannerAbbr(cheapest.banner)}</span>
+                                )}
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      {okMin ? (
+                        <div className="ok-msg">Meets ${MIN_CART} minimum</div>
+                      ) : (
+                        <div className="gap-msg">${(MIN_CART - subtotal).toFixed(2)} short of minimum</div>
+                      )}
+                    </>
                   )}
                 </div>
               );
@@ -585,7 +603,7 @@ function App() {
         <div className="title h-display">Daily <em>Loonie</em></div>
         <div className="meta">
           <span className="label">Week of</span>
-          <div className="edition">{currentWeek ? GroceryData.fmtShort(currentWeek.date) : ''}</div>
+          <div className="edition">{currentWeek ? currentWeek.date.toLocaleDateString('en-CA', { month: 'long', day: 'numeric' }) : ''}</div>
           <div style={{marginTop: 6}}>{banners.length} banners · {products.length} products tracked</div>
         </div>
       </header>
