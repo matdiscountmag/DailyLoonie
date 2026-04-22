@@ -658,8 +658,8 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
                         <div className="name">{p.title}{p.brand ? ` · ${p.brand}` : ''}</div>
                         <div className="banners">
                           {opts.map(({b, price}) => {
-                            const isCheapest = price === cheapestPrice;
-                            const premium = !isCheapest ? price - cheapestPrice : 0;
+                            const isCheapest = price <= cheapestPrice + 0.05;
+                            const premium = price > cheapestPrice + 0.05 ? price - cheapestPrice : 0;
                             return (
                               <span
                                 key={b}
