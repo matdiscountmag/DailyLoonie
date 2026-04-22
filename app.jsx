@@ -492,10 +492,17 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
                   <ul>
                     {items.map(({p, qty, options}) => {
                       const e = options.find(o => o.banner === banner);
+                      const cheapest = options[0];
+                      const premium = (banner !== cheapest.banner) ? (e.price - cheapest.price) * qty : 0;
                       return (
                         <li key={p.productId}>
                           <span className="nm">{qty}× {p.title}</span>
-                          <span className="n">{fmtMoney(e.price * qty)}</span>
+                          <span className="n">
+                            {fmtMoney(e.price * qty)}
+                            {premium > 0.005 && (
+                              <span className="item-premium">+{fmtMoney(premium)} vs {bannerAbbr(cheapest.banner)}</span>
+                            )}
+                          </span>
                         </li>
                       );
                     })}
