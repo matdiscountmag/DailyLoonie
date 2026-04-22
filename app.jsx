@@ -420,25 +420,30 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
           {products.map(p => {
             const qty = cart[p.productId] || 0;
             const opts = model.banners.map(b => ({ b, price: p.current[b]?.price }))
-              .filter(o => o.price != null)
-              .sort((a,b) => a.price - b.price);
+              .filter(o => o.price != null);
             if (!opts.length) return null;
+            const cheapestPrice = Math.min(...opts.map(o => o.price));
             const chosen = manualChoices[p.productId] || p.cheapestBanner;
             return (
               <div className="cart-product" key={p.productId}>
                 <div className="info">
-                  <div className="name">{p.title}{p.brand ? ` · ${p.brand}` : ''} <span style={{color:'var(--ink-4)', fontSize:'11px', fontFamily:'var(--sans)', fontStyle:'normal'}}>{p.size}</span></div>
+                  <div className="name">{p.title}{p.brand ? ` · ${p.brand}` : ''}</div>
                   <div className="banners">
-                    {opts.map(({b, price}, i) => (
-                      <span
-                        key={b}
-                        className={`opt ${chosen === b ? 'chosen' : ''} ${i === 0 ? 'cheapest' : ''}`}
-                        onClick={() => mode === 'manual' ? chooseBanner(p.productId, b) : null}
-                        style={{cursor: mode === 'manual' ? 'pointer' : 'default'}}
-                      >
-                        {bannerAbbr(b)} <span className="p">{fmtMoney(price)}</span>
-                      </span>
-                    ))}
+                    {opts.map(({b, price}) => {
+                      const isCheapest = price === cheapestPrice;
+                      const premium = !isCheapest ? price - cheapestPrice : 0;
+                      return (
+                        <span
+                          key={b}
+                          className={`opt ${chosen === b ? 'chosen' : ''} ${isCheapest ? 'cheapest' : ''}`}
+                          onClick={() => mode === 'manual' ? chooseBanner(p.productId, b) : null}
+                          style={{cursor: mode === 'manual' ? 'pointer' : 'default'}}
+                        >
+                          {bannerAbbr(b)} <span className="p">{fmtMoney(price)}</span>
+                          {premium > 0.005 && <span className="opt-premium">+{fmtMoney(premium)}</span>}
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
                 <div className={`qty-stepper ${qty === 0 ? 'zero' : ''}`}>
