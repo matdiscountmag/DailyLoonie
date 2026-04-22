@@ -584,7 +584,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .cart-product {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr auto auto;
   gap: 16px;
   padding: 14px 4px;
   border-bottom: 1px solid var(--rule);
@@ -635,6 +635,59 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   font-size: 12px;
   color: var(--accent);
 }
+
+/* ----- price history chart button ----- */
+.cart-hist-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-3);
+  flex-shrink: 0;
+  transition: border-color .12s, color .12s, background .12s;
+}
+.cart-hist-btn:hover,
+.cart-hist-btn.on {
+  border-color: var(--ink);
+  color: var(--ink);
+  background: var(--bg-sunk);
+}
+
+/* ----- price history tooltip ----- */
+.ph-tooltip {
+  position: fixed;
+  width: 300px;
+  background: var(--bg-card);
+  border: 1px solid var(--ink);
+  box-shadow: 0 4px 18px rgba(0,0,0,.12);
+  z-index: 999;
+  padding: 12px 14px;
+}
+.ph-hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.ph-title {
+  font-family: var(--serif);
+  font-size: 12px;
+  line-height: 1.2;
+  color: var(--ink);
+}
+.ph-close {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-3);
+  padding: 2px 3px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.ph-close:hover { color: var(--ink); }
 
 .qty-stepper {
   display: flex;

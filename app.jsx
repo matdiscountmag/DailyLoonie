@@ -30,6 +30,141 @@ function bannerAbbr(b) {
   })[b] || b.slice(0,3).toUpperCase();
 }
 
+// ---------- Price history chart setup ----------
+const PH_COLORS = {
+  'No Frills':                '#D4600A',
+  'Loblaws':                  '#A52019',
+  'Real Canadian Superstore': '#1B5EA6',
+  'Independent City Market':  '#246B3A',
+};
+const PH_BANNER_ORDER = ['No Frills', 'Loblaws', 'Real Canadian Superstore', 'Independent City Market'];
+
+const endLabelPlugin = {
+  id: 'phEndLabels',
+  afterDraw(chart) {
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.font = 'bold 11px system-ui,sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    const items = [];
+    chart.data.datasets.forEach((ds, i) => {
+      const meta = chart.getDatasetMeta(i);
+      if (!meta.visible) return;
+      let pt = null, val = null;
+      for (let j = ds.data.length - 1; j >= 0; j--) {
+        if (ds.data[j] != null) { pt = meta.data[j]; val = ds.data[j]; break; }
+      }
+      if (!pt) return;
+      items.push({ x: pt.x, y: pt.y, color: ds.borderColor, abbr: ds.label, val });
+    });
+    if (!items.length) { ctx.restore(); return; }
+    const totalBanners = items.length;
+    const groups = [];
+    items.forEach(item => {
+      const g = groups.find(g => Math.abs(g.price - item.val) < 0.005);
+      if (g) {
+        g.abbrs.push(item.abbr);
+        g.y = g.y + (item.y - g.y) / g.abbrs.length;
+        g.x = Math.max(g.x, item.x);
+      } else {
+        groups.push({ price: item.val, abbrs: [item.abbr], y: item.y, x: item.x, singleColor: item.color });
+      }
+    });
+    groups.sort((a, b) => a.y - b.y);
+    const MIN_GAP = 14;
+    for (let iter = 0; iter < 12; iter++) {
+      for (let i = 1; i < groups.length; i++) {
+        const a = groups[i - 1], b = groups[i];
+        const overlap = MIN_GAP - (b.y - a.y);
+        if (overlap > 0) { a.y -= overlap / 2; b.y += overlap / 2; }
+      }
+    }
+    groups.forEach(({ x, y, abbrs, price, singleColor }) => {
+      let label, color;
+      if (abbrs.length === totalBanners) {
+        label = `$${price.toFixed(2)} (All)`; color = '#888';
+      } else if (abbrs.length === 1) {
+        label = `$${price.toFixed(2)} (${abbrs[0]})`; color = singleColor;
+      } else {
+        label = `$${price.toFixed(2)} (${abbrs.join(', ')})`; color = '#666';
+      }
+      ctx.fillStyle = color;
+      ctx.fillText(label, x + 6, y);
+    });
+    ctx.restore();
+  }
+};
+Chart.register(endLabelPlugin);
+
+// ---------- PriceHistoryTooltip ----------
+function PriceHistoryTooltip({ product, weeks, anchorRect, onClose }) {
+  const canvasRef = useRef(null);
+  const chartRef = useRef(null);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; }
+
+    const datasets = PH_BANNER_ORDER.map(banner => {
+      const series = product.series[banner] || [];
+      const data = series.map(s => (s.entry && s.entry.price != null) ? s.entry.price : null);
+      if (!data.some(v => v != null)) return null;
+      const lastIdx = data.reduce((acc, v, i) => v != null ? i : acc, -1);
+      return {
+        label: bannerAbbr(banner),
+        data,
+        borderColor: PH_COLORS[banner],
+        backgroundColor: PH_COLORS[banner],
+        borderWidth: 2,
+        tension: 0.35,
+        cubicInterpolationMode: 'monotone',
+        spanGaps: false,
+        pointRadius: data.map((_, i) => i === lastIdx ? 3 : 0),
+        pointHoverRadius: data.map(() => 4),
+        hitRadius: 10,
+      };
+    }).filter(Boolean);
+
+    chartRef.current = new Chart(canvasRef.current, {
+      type: 'line',
+      data: { labels: weeks.map(w => w.key), datasets },
+      options: {
+        responsive: false,
+        animation: false,
+        layout: { padding: { left: 4, right: 82, top: 6, bottom: 4 } },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmtMoney(ctx.parsed.y)}` } }
+        },
+        scales: { x: { display: false }, y: { display: false } }
+      }
+    });
+
+    return () => { if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; } };
+  }, [product, weeks]);
+
+  let style = {};
+  if (anchorRect) {
+    let left = anchorRect.right + 10;
+    let top = anchorRect.top - 10;
+    if (left + 300 > window.innerWidth - 8) left = anchorRect.left - 310;
+    if (top + 160 > window.innerHeight - 8) top = window.innerHeight - 168;
+    if (top < 8) top = 8;
+    style = { left: left + 'px', top: top + 'px' };
+  }
+
+  return (
+    <div className="ph-tooltip" style={style}>
+      <div className="ph-hd">
+        <div className="ph-title">{product.title}</div>
+        <button className="ph-close" onClick={onClose}>✕</button>
+      </div>
+      <canvas ref={canvasRef} width="272" height="120" />
+    </div>
+  );
+}
+
 // ---------- Sparkline ----------
 function Sparkline({ series, cheapest }) {
   const pts = series.filter(s => s.entry && s.entry.price != null).map(s => s.entry.price);
@@ -292,9 +427,31 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
   const { products, banners } = model;
   const MIN_CART = 30;
   const [collapsed, setCollapsed] = useState(new Set());
+  const [historyPid, setHistoryPid] = useState(null);
+  const [historyAnchorRect, setHistoryAnchorRect] = useState(null);
+
   function toggleCollapse(banner) {
     setCollapsed(prev => { const n = new Set(prev); n.has(banner) ? n.delete(banner) : n.add(banner); return n; });
   }
+
+  function openHistory(pid, e) {
+    e.stopPropagation();
+    if (historyPid === pid) { setHistoryPid(null); setHistoryAnchorRect(null); return; }
+    setHistoryPid(pid);
+    setHistoryAnchorRect(e.currentTarget.getBoundingClientRect());
+  }
+
+  function closeHistory() { setHistoryPid(null); setHistoryAnchorRect(null); }
+
+  useEffect(() => {
+    function onKey(e) { if (e.key === 'Escape') closeHistory(); }
+    function onDoc(e) {
+      if (!e.target.closest('.ph-tooltip') && !e.target.closest('.cart-hist-btn')) closeHistory();
+    }
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('click', onDoc);
+    return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('click', onDoc); };
+  }, []);
 
   const cartProducts = useMemo(() =>
     products.filter(p => cart[p.productId] > 0).map(p => ({ p, qty: cart[p.productId] }))
@@ -456,6 +613,15 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
                     })}
                   </div>
                 </div>
+                <button
+                  className={`cart-hist-btn${historyPid === p.productId ? ' on' : ''}`}
+                  onClick={e => openHistory(p.productId, e)}
+                  title="Price history"
+                >
+                  <svg width="12" height="12" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="0.5,11.5 3.5,6.5 6.5,9 9.5,2.5 12.5,5.5"/>
+                  </svg>
+                </button>
                 <div className={`qty-stepper ${qty === 0 ? 'zero' : ''}`}>
                   <button onClick={() => setQty(p.productId, qty - 1)}>−</button>
                   <span className="q">{qty}</span>
@@ -465,6 +631,10 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
             );
           })}
         </div>
+        {historyPid && (() => {
+          const hp = products.find(x => x.productId === historyPid);
+          return hp ? <PriceHistoryTooltip product={hp} weeks={model.weeks} anchorRect={historyAnchorRect} onClose={closeHistory} /> : null;
+        })()}
       </div>
 
       <div className="cart-summary">
