@@ -62,7 +62,7 @@ const endLabelPlugin = {
   afterDraw(chart) {
     const ctx = chart.ctx;
     ctx.save();
-    ctx.font = 'bold 11px system-ui,sans-serif';
+    ctx.font = '500 13px system-ui,sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     const items = [];
