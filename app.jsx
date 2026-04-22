@@ -459,19 +459,10 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
 
       <div className="cart-summary">
         <div className="summary-header">
-          <h3>Summary</h3>
+          <div className="grand">{fmtMoney(total)}</div>
           {cartProducts.length > 0 && (
             <button className="clear-cart-btn" onClick={onClear}>Clear cart</button>
           )}
-        </div>
-        <div className="totals-lead">
-          <div>
-            <div className="label">Grand total</div>
-            <div className="grand">
-              {fmtMoney(total)}
-              <span className="sub">{cartProducts.length} items · {buckets.length} cart{buckets.length !== 1 ? 's' : ''}</span>
-            </div>
-          </div>
         </div>
 
         <div className="mode-toggle">
