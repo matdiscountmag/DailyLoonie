@@ -528,7 +528,7 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
 function App() {
   const [model, setModel] = useState(null);
   const [err, setErr] = useState(null);
-  const [tab, setTab] = useState('compare');
+  const [tab, setTab] = useState('cart');
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('name');
@@ -591,14 +591,14 @@ function App() {
       </header>
 
       <nav className="tabs">
+        <button className={`tab ${tab === 'cart' ? 'active' : ''}`} onClick={() => setTab('cart')}>
+          Cart builder <span className="count">{cartCount}</span>
+        </button>
         <button className={`tab ${tab === 'compare' ? 'active' : ''}`} onClick={() => setTab('compare')}>
           Compare <span className="count">{products.length}</span>
         </button>
         <button className={`tab ${tab === 'deals' ? 'active' : ''}`} onClick={() => setTab('deals')}>
           Best deals <span className="count">{counts.onsale}</span>
-        </button>
-        <button className={`tab ${tab === 'cart' ? 'active' : ''}`} onClick={() => setTab('cart')}>
-          Cart builder <span className="count">{cartCount}</span>
         </button>
       </nav>
 
