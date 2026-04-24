@@ -1004,6 +1004,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     left: 0;
     right: 0;
     z-index: 100;
+    border-top: 1px solid var(--ink);
   }
 }
 
@@ -1028,7 +1029,6 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 
 .cart-float-bottom-bar {
   background: #fff;
-  border-top: 1px solid var(--ink);
   padding: 10px 14px 20px;
   display: flex;
   align-items: center;
