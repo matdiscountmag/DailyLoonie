@@ -481,14 +481,14 @@ const PICKER_ORDER = ['No Frills', 'Real Canadian Superstore', 'Loblaws', 'Indep
 function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode, setMode, onClear, starred, onStarToggle }) {
   const { products, banners } = model;
   const MIN_CART = 30;
-  const [collapsed, setCollapsed] = useState(new Set());
+  const [expanded, setExpanded] = useState(new Set());
   const [historyPid, setHistoryPid] = useState(null);
   const [historyAnchorRect, setHistoryAnchorRect] = useState(null);
   const [csOpen, setCsOpen] = useState(true);
   const [coOpen, setCoOpen] = useState(true);
 
   function toggleCollapse(banner) {
-    setCollapsed(prev => { const n = new Set(prev); n.has(banner) ? n.delete(banner) : n.add(banner); return n; });
+    setExpanded(prev => { const n = new Set(prev); n.has(banner) ? n.delete(banner) : n.add(banner); return n; });
   }
 
   function openHistory(pid, e) {
@@ -631,11 +631,6 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
   return (
     <div className="cart-layout">
       <div>
-        <div className="section-lede">
-          <h2>Your cart in pieces</h2>
-          <p>Add items below. Prices load from the current week's data. In <em>auto</em> mode we route each item to its cheapest banner, then collapse any cart under the ${MIN_CART} minimum into a merged cart. In <em>manual</em> mode you pick the banner yourself.</p>
-        </div>
-
         <div className="cart-picker">
           {(() => {
             function renderProduct(p) {
@@ -719,6 +714,12 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
             );
           })()}
         </div>
+
+        <div className="section-lede" style={{marginTop: 24}}>
+          <h2>Your cart in pieces</h2>
+          <p>Add items above. Prices load from the current week's data. In <em>auto</em> mode we route each item to its cheapest banner, then collapse any cart under the ${MIN_CART} minimum into a merged cart. In <em>manual</em> mode you pick the banner yourself.</p>
+        </div>
+
         {historyPid && (() => {
           const hp = products.find(x => x.productId === historyPid);
           return hp ? <PriceHistoryTooltip product={hp} weeks={model.weeks} anchorRect={historyAnchorRect} onClose={closeHistory} /> : null;
@@ -747,7 +748,7 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
           <div className="cart-split">
             {buckets.map(({banner, items, subtotal}) => {
               const okMin = subtotal >= MIN_CART;
-              const isCollapsed = collapsed.has(banner);
+              const isCollapsed = !expanded.has(banner);
               return (
                 <div className={`split-bucket ${okMin ? 'ok' : 'warn'}${isCollapsed ? ' collapsed' : ''}`} key={banner}>
                   <div className="head" onClick={() => toggleCollapse(banner)}>
@@ -875,7 +876,6 @@ function App() {
         <div className="meta">
           <span className="label">Week of</span>
           <div className="edition">{currentWeek ? currentWeek.date.toLocaleDateString('en-CA', { month: 'long', day: 'numeric' }) : ''}</div>
-          <div style={{marginTop: 6}}>{banners.length} banners · {products.length} products tracked</div>
         </div>
       </header>
 
@@ -940,8 +940,7 @@ function App() {
       )}
 
       <div className="footer-note">
-        <span>Daily Loonie — weekly price index for the Loblaws family</span>
-        <span>Data refreshed every Monday · {model.weeks.length} weeks on record</span>
+        <span>{products.length} products tracked · {model.weeks.length} weeks on record</span>
       </div>
     </div>
   );
