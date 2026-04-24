@@ -20,7 +20,7 @@
 
   --serif: "Instrument Serif", "Times New Roman", serif;
   --sans: "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, monospace;
+  --mono: "Inter", "DM Sans", sans-serif;
 
   --measure-narrow: 560px;
   --measure-wide: 1400px;
