@@ -135,7 +135,7 @@ function PriceHistoryTooltip({ product, weeks, anchorRect, onClose }) {
         borderColor: PH_COLORS[banner],
         backgroundColor: PH_COLORS[banner],
         borderWidth: 2,
-        tension: 0.35,
+        tension: 0.15,
         cubicInterpolationMode: 'monotone',
         spanGaps: false,
         pointRadius: data.map((_, i) => i === lastIdx ? 3 : 0),
