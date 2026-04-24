@@ -809,15 +809,17 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
     <div className="cart-float">
       <div className={`cart-float-panel${cartExpanded ? ' open' : ''}`}>
         <div className="cart-float-panel-inner">
-          <div className="cart-summary">
+          <div className="cart-summary cart-summary--float">
             {summaryBody}
           </div>
         </div>
       </div>
-      <button className="cart-float-pill" onClick={() => setCartExpanded(e => !e)}>
-        <span className="pill-total">{fmtMoney(total)}</span>
-        <span className={`pill-chev${cartExpanded ? ' open' : ''}`}>▾</span>
-      </button>
+      <div className="cart-float-pill-row">
+        <button className="cart-float-pill" onClick={() => setCartExpanded(e => !e)}>
+          <span className="pill-total">{fmtMoney(total)}</span>
+          <span className={`pill-chev${cartExpanded ? ' open' : ''}`}>▾</span>
+        </button>
+      </div>
     </div>
     </>
   );
