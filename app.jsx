@@ -809,7 +809,9 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
     <div className="cart-float">
       <div className={`cart-float-panel${cartExpanded ? ' open' : ''}`}>
         <div className="cart-float-panel-inner">
-          {summaryBody}
+          <div className="cart-summary">
+            {summaryBody}
+          </div>
         </div>
       </div>
       <button className="cart-float-pill" onClick={() => setCartExpanded(e => !e)}>
