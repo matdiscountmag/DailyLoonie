@@ -486,6 +486,7 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
   const [historyAnchorRect, setHistoryAnchorRect] = useState(null);
   const [csOpen, setCsOpen] = useState(true);
   const [coOpen, setCoOpen] = useState(true);
+  const [cartExpanded, setCartExpanded] = useState(false);
 
   function toggleCollapse(banner) {
     setExpanded(prev => { const n = new Set(prev); n.has(banner) ? n.delete(banner) : n.add(banner); return n; });
@@ -628,7 +629,82 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
 
   const { buckets, total, savingsVsSingle } = useMemo(computeSplit, [cartProducts, banners, mode, manualChoices]);
 
+  const summaryBody = (
+    <>
+      <div className="summary-header">
+        <div className="grand">{fmtMoney(total)}</div>
+        {cartProducts.length > 0 && (
+          <button className="clear-cart-btn" onClick={onClear}>Clear cart</button>
+        )}
+      </div>
+
+      <div className="mode-toggle">
+        <button className={mode === 'auto' ? 'active' : ''} onClick={() => setMode('auto')}>Auto split</button>
+        <button className={mode === 'manual' ? 'active' : ''} onClick={() => setMode('manual')}>Manual</button>
+      </div>
+
+      {cartProducts.length === 0 ? (
+        <div className="empty-cart">
+          Empty cart.
+          <div className="hint">Add items from the table →</div>
+        </div>
+      ) : (
+        <div className="cart-split">
+          {buckets.map(({banner, items, subtotal}) => {
+            const okMin = subtotal >= MIN_CART;
+            const isCollapsed = !expanded.has(banner);
+            return (
+              <div className={`split-bucket ${okMin ? 'ok' : 'warn'}${isCollapsed ? ' collapsed' : ''}`} key={banner}>
+                <div className="head" onClick={() => toggleCollapse(banner)}>
+                  <span className="banner-name">{bannerShort(banner)}</span>
+                  <div style={{display:'flex',alignItems:'baseline',gap:8}}>
+                    <span className="subtotal">{fmtMoney(subtotal)}</span>
+                    <span className="bucket-toggle">{isCollapsed ? '+' : '−'}</span>
+                  </div>
+                </div>
+                {!isCollapsed && (
+                  <>
+                    <ul>
+                      {items.map(({p, qty, options}) => {
+                        const e = options.find(o => o.banner === banner);
+                        const cheapest = options[0];
+                        const premium = (banner !== cheapest.banner) ? (e.price - cheapest.price) * qty : 0;
+                        return (
+                          <li key={p.productId}>
+                            <span className="nm">{qty}× {p.title}</span>
+                            <span className="n">
+                              {fmtMoney(e.price * qty)}
+                              {premium > 0.005 && (
+                                <span className="item-premium">+{fmtMoney(premium)} vs {bannerAbbr(cheapest.banner)}</span>
+                              )}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    {okMin ? (
+                      <div className="ok-msg">Meets ${MIN_CART} minimum</div>
+                    ) : (
+                      <div className="gap-msg">${(MIN_CART - subtotal).toFixed(2)} short of minimum</div>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })}
+
+          {savingsVsSingle > 0.01 && (
+            <div className="savings-note">
+              Splitting saves <span className="amt">{fmtMoney(savingsVsSingle)}</span> over buying everything from a single cheapest banner.
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+
   return (
+    <>
     <div className="cart-layout">
       <div>
         <div className="cart-picker">
@@ -727,77 +803,21 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
       </div>
 
       <div className="cart-summary">
-        <div className="summary-header">
-          <div className="grand">{fmtMoney(total)}</div>
-          {cartProducts.length > 0 && (
-            <button className="clear-cart-btn" onClick={onClear}>Clear cart</button>
-          )}
-        </div>
-
-        <div className="mode-toggle">
-          <button className={mode === 'auto' ? 'active' : ''} onClick={() => setMode('auto')}>Auto split</button>
-          <button className={mode === 'manual' ? 'active' : ''} onClick={() => setMode('manual')}>Manual</button>
-        </div>
-
-        {cartProducts.length === 0 ? (
-          <div className="empty-cart">
-            Empty cart.
-            <div className="hint">Add items from the table →</div>
-          </div>
-        ) : (
-          <div className="cart-split">
-            {buckets.map(({banner, items, subtotal}) => {
-              const okMin = subtotal >= MIN_CART;
-              const isCollapsed = !expanded.has(banner);
-              return (
-                <div className={`split-bucket ${okMin ? 'ok' : 'warn'}${isCollapsed ? ' collapsed' : ''}`} key={banner}>
-                  <div className="head" onClick={() => toggleCollapse(banner)}>
-                    <span className="banner-name">{bannerShort(banner)}</span>
-                    <div style={{display:'flex',alignItems:'baseline',gap:8}}>
-                      <span className="subtotal">{fmtMoney(subtotal)}</span>
-                      <span className="bucket-toggle">{isCollapsed ? '+' : '−'}</span>
-                    </div>
-                  </div>
-                  {!isCollapsed && (
-                    <>
-                      <ul>
-                        {items.map(({p, qty, options}) => {
-                          const e = options.find(o => o.banner === banner);
-                          const cheapest = options[0];
-                          const premium = (banner !== cheapest.banner) ? (e.price - cheapest.price) * qty : 0;
-                          return (
-                            <li key={p.productId}>
-                              <span className="nm">{qty}× {p.title}</span>
-                              <span className="n">
-                                {fmtMoney(e.price * qty)}
-                                {premium > 0.005 && (
-                                  <span className="item-premium">+{fmtMoney(premium)} vs {bannerAbbr(cheapest.banner)}</span>
-                                )}
-                              </span>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                      {okMin ? (
-                        <div className="ok-msg">Meets ${MIN_CART} minimum</div>
-                      ) : (
-                        <div className="gap-msg">${(MIN_CART - subtotal).toFixed(2)} short of minimum</div>
-                      )}
-                    </>
-                  )}
-                </div>
-              );
-            })}
-
-            {savingsVsSingle > 0.01 && (
-              <div className="savings-note">
-                Splitting saves <span className="amt">{fmtMoney(savingsVsSingle)}</span> over buying everything from a single cheapest banner.
-              </div>
-            )}
-          </div>
-        )}
+        {summaryBody}
       </div>
     </div>
+    <div className="cart-float">
+      <div className={`cart-float-panel${cartExpanded ? ' open' : ''}`}>
+        <div className="cart-float-panel-inner">
+          {summaryBody}
+        </div>
+      </div>
+      <button className="cart-float-pill" onClick={() => setCartExpanded(e => !e)}>
+        <span className="pill-total">{fmtMoney(total)}</span>
+        <span className={`pill-chev${cartExpanded ? ' open' : ''}`}>▾</span>
+      </button>
+    </div>
+    </>
   );
 }
 
