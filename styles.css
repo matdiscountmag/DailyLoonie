@@ -83,7 +83,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   gap: 20px;
 }
 .masthead-logo {
-  height: clamp(44px, 7vw, 84px);
+  height: clamp(52px, 8.5vw, 100px);
   width: auto;
   display: block;
 }
@@ -1032,6 +1032,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   padding: 10px 14px 20px;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
 }
 

@@ -813,19 +813,21 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
         </div>
       </div>
       <div className="cart-float-bottom-bar">
-        <div className="cart-float-mode">
-          <button className={mode === 'auto' ? 'active' : ''} onClick={() => setMode('auto')}>Auto split</button>
-          <button className={mode === 'manual' ? 'active' : ''} onClick={() => setMode('manual')}>Manual</button>
-        </div>
-        <button className="cart-float-trash" onClick={onClear} title="Clear cart">
-          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="2,4 14,4"/>
-            <path d="M5,4V2h6v2"/>
-            <path d="M3,4l1,10h8l1-10"/>
-            <line x1="6" y1="7" x2="6" y2="11"/>
-            <line x1="10" y1="7" x2="10" y2="11"/>
-          </svg>
-        </button>
+        {cartExpanded && <>
+          <div className="cart-float-mode">
+            <button className={mode === 'auto' ? 'active' : ''} onClick={() => setMode('auto')}>Auto split</button>
+            <button className={mode === 'manual' ? 'active' : ''} onClick={() => setMode('manual')}>Manual</button>
+          </div>
+          <button className="cart-float-trash" onClick={onClear} title="Clear cart">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="2,4 14,4"/>
+              <path d="M5,4V2h6v2"/>
+              <path d="M3,4l1,10h8l1-10"/>
+              <line x1="6" y1="7" x2="6" y2="11"/>
+              <line x1="10" y1="7" x2="10" y2="11"/>
+            </svg>
+          </button>
+        </>}
         <button className="cart-float-pill" onClick={() => setCartExpanded(e => !e)}>
           <span className="pill-total">{fmtMoney(total)}</span>
           <span className={`pill-chev${cartExpanded ? ' open' : ''}`}>▾</span>
