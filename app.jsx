@@ -485,7 +485,7 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
   const [historyPid, setHistoryPid] = useState(null);
   const [historyAnchorRect, setHistoryAnchorRect] = useState(null);
   const [csOpen, setCsOpen] = useState(true);
-  const [coOpen, setCoOpen] = useState(true);
+  const [coOpen, setCoOpen] = useState(false);
   const [cartExpanded, setCartExpanded] = useState(false);
 
   function toggleCollapse(banner) {
