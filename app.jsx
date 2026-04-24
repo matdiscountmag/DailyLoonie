@@ -629,6 +629,64 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
 
   const { buckets, total, savingsVsSingle } = useMemo(computeSplit, [cartProducts, banners, mode, manualChoices]);
 
+  const cartSplitContent = cartProducts.length === 0 ? (
+    <div className="empty-cart">
+      Empty cart.
+      <div className="hint">Add items from the table →</div>
+    </div>
+  ) : (
+    <div className="cart-split">
+      {buckets.map(({banner, items, subtotal}) => {
+        const okMin = subtotal >= MIN_CART;
+        const isCollapsed = !expanded.has(banner);
+        return (
+          <div className={`split-bucket ${okMin ? 'ok' : 'warn'}${isCollapsed ? ' collapsed' : ''}`} key={banner}>
+            <div className="head" onClick={() => toggleCollapse(banner)}>
+              <span className="banner-name">{bannerShort(banner)}</span>
+              <div style={{display:'flex',alignItems:'baseline',gap:8}}>
+                <span className="subtotal">{fmtMoney(subtotal)}</span>
+                <span className="bucket-toggle">{isCollapsed ? '+' : '−'}</span>
+              </div>
+            </div>
+            {!isCollapsed && (
+              <>
+                <ul>
+                  {items.map(({p, qty, options}) => {
+                    const e = options.find(o => o.banner === banner);
+                    const cheapest = options[0];
+                    const premium = (banner !== cheapest.banner) ? (e.price - cheapest.price) * qty : 0;
+                    return (
+                      <li key={p.productId}>
+                        <span className="nm">{qty}× {p.title}</span>
+                        <span className="n">
+                          {fmtMoney(e.price * qty)}
+                          {premium > 0.005 && (
+                            <span className="item-premium">+{fmtMoney(premium)} vs {bannerAbbr(cheapest.banner)}</span>
+                          )}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+                {okMin ? (
+                  <div className="ok-msg">Meets ${MIN_CART} minimum</div>
+                ) : (
+                  <div className="gap-msg">${(MIN_CART - subtotal).toFixed(2)} short of minimum</div>
+                )}
+              </>
+            )}
+          </div>
+        );
+      })}
+
+      {savingsVsSingle > 0.01 && (
+        <div className="savings-note">
+          Splitting saves <span className="amt">{fmtMoney(savingsVsSingle)}</span> over buying everything from a single cheapest banner.
+        </div>
+      )}
+    </div>
+  );
+
   const summaryBody = (
     <>
       <div className="summary-header">
@@ -637,69 +695,11 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
           <button className="clear-cart-btn" onClick={onClear}>Clear cart</button>
         )}
       </div>
-
       <div className="mode-toggle">
         <button className={mode === 'auto' ? 'active' : ''} onClick={() => setMode('auto')}>Auto split</button>
         <button className={mode === 'manual' ? 'active' : ''} onClick={() => setMode('manual')}>Manual</button>
       </div>
-
-      {cartProducts.length === 0 ? (
-        <div className="empty-cart">
-          Empty cart.
-          <div className="hint">Add items from the table →</div>
-        </div>
-      ) : (
-        <div className="cart-split">
-          {buckets.map(({banner, items, subtotal}) => {
-            const okMin = subtotal >= MIN_CART;
-            const isCollapsed = !expanded.has(banner);
-            return (
-              <div className={`split-bucket ${okMin ? 'ok' : 'warn'}${isCollapsed ? ' collapsed' : ''}`} key={banner}>
-                <div className="head" onClick={() => toggleCollapse(banner)}>
-                  <span className="banner-name">{bannerShort(banner)}</span>
-                  <div style={{display:'flex',alignItems:'baseline',gap:8}}>
-                    <span className="subtotal">{fmtMoney(subtotal)}</span>
-                    <span className="bucket-toggle">{isCollapsed ? '+' : '−'}</span>
-                  </div>
-                </div>
-                {!isCollapsed && (
-                  <>
-                    <ul>
-                      {items.map(({p, qty, options}) => {
-                        const e = options.find(o => o.banner === banner);
-                        const cheapest = options[0];
-                        const premium = (banner !== cheapest.banner) ? (e.price - cheapest.price) * qty : 0;
-                        return (
-                          <li key={p.productId}>
-                            <span className="nm">{qty}× {p.title}</span>
-                            <span className="n">
-                              {fmtMoney(e.price * qty)}
-                              {premium > 0.005 && (
-                                <span className="item-premium">+{fmtMoney(premium)} vs {bannerAbbr(cheapest.banner)}</span>
-                              )}
-                            </span>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                    {okMin ? (
-                      <div className="ok-msg">Meets ${MIN_CART} minimum</div>
-                    ) : (
-                      <div className="gap-msg">${(MIN_CART - subtotal).toFixed(2)} short of minimum</div>
-                    )}
-                  </>
-                )}
-              </div>
-            );
-          })}
-
-          {savingsVsSingle > 0.01 && (
-            <div className="savings-note">
-              Splitting saves <span className="amt">{fmtMoney(savingsVsSingle)}</span> over buying everything from a single cheapest banner.
-            </div>
-          )}
-        </div>
-      )}
+      {cartSplitContent}
     </>
   );
 
@@ -809,12 +809,23 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
     <div className="cart-float">
       <div className={`cart-float-panel${cartExpanded ? ' open' : ''}`}>
         <div className="cart-float-panel-inner">
-          <div className="cart-summary cart-summary--float">
-            {summaryBody}
-          </div>
+          {cartSplitContent}
         </div>
       </div>
-      <div className="cart-float-pill-row">
+      <div className="cart-float-bottom-bar">
+        <div className="cart-float-mode">
+          <button className={mode === 'auto' ? 'active' : ''} onClick={() => setMode('auto')}>Auto split</button>
+          <button className={mode === 'manual' ? 'active' : ''} onClick={() => setMode('manual')}>Manual</button>
+        </div>
+        <button className="cart-float-trash" onClick={onClear} title="Clear cart">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="2,4 14,4"/>
+            <path d="M5,4V2h6v2"/>
+            <path d="M3,4l1,10h8l1-10"/>
+            <line x1="6" y1="7" x2="6" y2="11"/>
+            <line x1="10" y1="7" x2="10" y2="11"/>
+          </svg>
+        </button>
         <button className="cart-float-pill" onClick={() => setCartExpanded(e => !e)}>
           <span className="pill-total">{fmtMoney(total)}</span>
           <span className={`pill-chev${cartExpanded ? ' open' : ''}`}>▾</span>

@@ -991,7 +991,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 
 /* ============================================================
-   FLOATING CART PILL (mobile only)
+   FLOATING CART (mobile only)
    ============================================================ */
 .cart-float {
   display: none;
@@ -1022,7 +1022,89 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .cart-float-panel-inner {
   overflow-y: auto;
   max-height: 70vh;
+  background: #fff;
+  padding: 14px 16px;
+}
+
+.cart-float-bottom-bar {
+  background: #fff;
   border-top: 1px solid var(--ink);
+  padding: 10px 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cart-float-mode {
+  display: flex;
+  border: 1px solid var(--rule-strong);
+  flex: 1;
+}
+.cart-float-mode button {
+  flex: 1;
+  padding: 7px 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+  border-right: 1px solid var(--rule-strong);
+  font-weight: 500;
+}
+.cart-float-mode button:last-child { border-right: 0; }
+.cart-float-mode button.active {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.cart-float-trash {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--rule-strong);
+  color: var(--ink-3);
+  flex-shrink: 0;
+  cursor: pointer;
+  background: none;
+}
+.cart-float-trash:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.cart-float-pill {
+  background: var(--ink);
+  color: var(--bg);
+  border-radius: 10px;
+  padding: 9px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  border: none;
+  font: inherit;
+  flex-shrink: 0;
+}
+.cart-float-pill:active {
+  background: oklch(28% 0.012 80);
+}
+.cart-float-pill .pill-total {
+  font-family: var(--mono);
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+.cart-float-pill .pill-chev {
+  font-family: var(--mono);
+  font-size: 12px;
+  opacity: 0.55;
+  transition: transform 0.25s;
+}
+.cart-float-pill .pill-chev.open {
+  transform: rotate(180deg);
 }
 
 /* cart-summary inside the float: strip sticky/border, keep everything else */
