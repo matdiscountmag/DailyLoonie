@@ -78,9 +78,14 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   padding-bottom: 18px;
   margin-bottom: 28px;
   display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: end;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
   gap: 20px;
+}
+.masthead-logo {
+  height: clamp(44px, 7vw, 84px);
+  width: auto;
+  display: block;
 }
 .masthead .title {
   font-family: var(--serif);
@@ -106,8 +111,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   font-style: italic;
 }
 @media (max-width: 640px) {
-  .masthead { grid-template-columns: 1fr; }
-  .masthead .meta { text-align: left; }
+  .masthead { grid-template-columns: auto 1fr; }
+  .masthead .meta { grid-column: 1 / -1; text-align: left; }
 }
 
 /* ----- nav tabs ----- */

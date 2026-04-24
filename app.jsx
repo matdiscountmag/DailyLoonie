@@ -896,7 +896,8 @@ function App() {
   return (
     <div className="page">
       <header className="masthead">
-        <div className="title h-display"><img src="daily_loonie_icon.png" alt="" style={{height:'0.8em',width:'auto',verticalAlign:'middle',marginRight:'0.18em',marginBottom:'0.08em'}} />Daily <em>Loonie</em></div>
+        <img src="daily_loonie_icon.png" alt="Daily Loonie" className="masthead-logo" />
+        <div className="title h-display">Daily <em>Loonie</em></div>
         <div className="meta">
           <span className="label">Week of</span>
           <div className="edition">{currentWeek ? currentWeek.date.toLocaleDateString('en-CA', { month: 'long', day: 'numeric' }) : ''}</div>
