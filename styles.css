@@ -111,8 +111,10 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   font-style: italic;
 }
 @media (max-width: 640px) {
-  .masthead { grid-template-columns: auto 1fr; }
-  .masthead .meta { grid-column: 1 / -1; text-align: left; }
+  .masthead { grid-template-columns: auto 1fr auto; gap: 12px; }
+  .masthead .meta { text-align: right; }
+  .masthead-logo { height: clamp(36px, 10vw, 52px); }
+  .masthead .title { font-size: clamp(28px, 8vw, 44px); }
 }
 
 /* ----- nav tabs ----- */
@@ -1004,7 +1006,6 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     left: 0;
     right: 0;
     z-index: 100;
-    border-top: 1px solid var(--ink);
   }
 }
 
@@ -1028,12 +1029,16 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 
 .cart-float-bottom-bar {
-  background: #fff;
+  background: transparent;
   padding: 10px 14px 20px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+}
+.cart-float-bottom-bar.open {
+  background: #fff;
+  border-top: 1px solid var(--ink);
 }
 
 .cart-float-mode {

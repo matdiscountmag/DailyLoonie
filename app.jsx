@@ -812,7 +812,7 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
           {cartSplitContent}
         </div>
       </div>
-      <div className="cart-float-bottom-bar">
+      <div className={`cart-float-bottom-bar${cartExpanded ? ' open' : ''}`}>
         {cartExpanded && <>
           <div className="cart-float-mode">
             <button className={mode === 'auto' ? 'active' : ''} onClick={() => setMode('auto')}>Auto split</button>
