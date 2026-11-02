@@ -36,22 +36,34 @@
   }
 
   // ---------- products.md parser ----------
+  // Returns { meta, retired }:
+  //   meta    — pid -> display metadata for every product row, active or retired
+  //   retired — pid -> retired date string (YYYY-MM-DD) for rows under a
+  //             "## Retired Products…" heading. Status is read fresh on every load.
+  // Rows: | Brand | Product | Size | Unit | Product ID | (Retired) |
   function parseProductsMD(text) {
     const products = {};
-    const lines = text.split('\n');
-    // We want rows with | Brand | Product | Size | Unit | Product ID |
-    for (const raw of lines) {
+    const retired = {};
+    const active = new Set();
+    let inRetired = false;
+    for (const raw of text.split('\n')) {
       const line = raw.trim();
+      // A "## " heading starts a new section; only the Retired section marks retirement
+      if (line.startsWith('## ')) { inRetired = /^## Retired Products/i.test(line); continue; }
       if (!line.startsWith('|') || !line.endsWith('|')) continue;
       const cells = line.slice(1, -1).split('|').map(s => s.trim());
       if (cells.length < 5) continue;
-      const [brand, product, size, unit, pid] = cells;
+      const [brand, product, size, unit, pid, retiredOn] = cells;
       // skip header and separator rows
       if (pid === 'Product ID' || /^-+$/.test(pid) || !pid) continue;
       if (!/\d/.test(pid)) continue;
       products[pid] = { brand: brand === '—' ? '' : brand, product, size, unit, productId: pid };
+      if (inRetired) retired[pid] = retiredOn || '';
+      else active.add(pid);
     }
-    return products;
+    // If a product is listed in both tables, the active listing wins
+    active.forEach(pid => { delete retired[pid]; });
+    return { meta: products, retired };
   }
 
   // ---------- date utils ----------
@@ -61,13 +73,27 @@
     if (!m) return null;
     return new Date(+m[3], +m[1]-1, +m[2]);
   }
+  function parseISODate(s) {
+    const m = (s || '').match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    return m ? new Date(+m[1], +m[2]-1, +m[3]) : null;
+  }
   function fmtShort(d) {
     if (!d) return '';
     return d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
   }
 
+  // ---------- comparison value ----------
+  // By-weight products (_KG IDs) come in packages of varying weight, so they're
+  // compared on their per-kg unit price. Everything else compares on the package
+  // price. Cart totals always use the package price — that's what you pay.
+  function compareValue(p, e) {
+    if (!e || e.price == null) return null;
+    if (p && p.byWeight && e.unitPrice != null && e.unitPrice > 0) return e.unitPrice;
+    return e.price;
+  }
+
   // ---------- build data model ----------
-  function buildModel(priceRows, productMeta) {
+  function buildModel(priceRows, productMeta, retiredMap) {
     // Filter out Amazon per user instruction
     priceRows = priceRows.filter(r => (r.banner || '').toLowerCase() !== 'amazon');
 
@@ -102,6 +128,7 @@
         const meta = productMeta[pid] || {};
         productsById[pid] = {
           productId: pid,
+          byWeight: /_KG$/i.test(pid),
           brand: (r.brand && r.brand.trim()) || meta.brand || '',
           title: meta.product || cleanTitle(r.title),
           size: meta.size || r.package_size || '',
@@ -112,6 +139,12 @@
       }
       const p = productsById[pid];
       if (!p.byBanner[r.banner]) p.byBanner[r.banner] = {};
+      // If this week already has an entry, only overwrite it when this row is
+      // from a newer refresh. This makes the latest run win regardless of the
+      // row's position in the CSV (no longer relies on file ordering).
+      const existing = p.byBanner[r.banner][r.week_start];
+      const runDate = parseMDY(r.run_date);
+      if (existing && existing.runDate && runDate && runDate < existing.runDate) return;
       const price = parseFloat(r.price);
       const wasPrice = parseFloat(r.was_price);
       const unitPrice = parseFloat(r.unit_price);
@@ -125,12 +158,13 @@
         dealExpiry: parseMDY(r.deal_expiry),
         url: r.url || '',
         weekKey: r.week_start,
+        runDate: runDate,
       };
     });
 
     // Compute, for each product: cheapestBanner this week, biggest drop, weekly series, etc.
-    const products = Object.values(productsById);
-    products.forEach(p => {
+    const allProducts = Object.values(productsById);
+    allProducts.forEach(p => {
       // current prices per banner
       p.current = {};
       p.previous = {};
@@ -154,21 +188,23 @@
       // cheapest banner for current week
       let min = Infinity, minBanner = null;
       banners.forEach(b => {
-        const e = p.current[b];
-        if (e && e.price != null && e.price < min) { min = e.price; minBanner = b; }
+        const v = compareValue(p, p.current[b]);
+        if (v != null && v < min) { min = v; minBanner = b; }
       });
       p.cheapestBanner = minBanner;
-      p.cheapestPrice = isFinite(min) ? min : null;
+      p.cheapestPrice = minBanner ? p.current[minBanner].price : null; // package price at the cheapest banner
 
       // biggest drop vs previous week (across banners)
       let bestDropPct = 0, bestDropAmt = 0, bestDropBanner = null;
       banners.forEach(b => {
         const cur = p.current[b], prev = p.previous[b];
-        if (cur && prev && cur.price != null && prev.price != null && prev.price > 0 && cur.price < prev.price) {
-          const pct = (prev.price - cur.price) / prev.price;
+        const cv = compareValue(p, cur), pv = compareValue(p, prev);
+        if (cv != null && pv != null && pv > 0 && cv < pv) {
+          const pct = (pv - cv) / pv;
           if (pct > bestDropPct) {
             bestDropPct = pct;
-            bestDropAmt = prev.price - cur.price;
+            // by-weight: the per-kg drop applied to this week's package weight
+            bestDropAmt = (p.byWeight && cv !== cur.price) ? (pv - cv) * (cur.price / cv) : pv - cv;
             bestDropBanner = b;
           }
         }
@@ -189,7 +225,35 @@
         }
       });
       p.bestSale = bestSaleBanner ? { banner: bestSaleBanner, pct: bestSalePct, amt: bestSaleAmt } : null;
+
+      // last week with any price, and each banner's price that week
+      // (used to show retired products at their last-known prices)
+      let lastIdx = -1;
+      banners.forEach(b => {
+        p.series[b].forEach((s, i) => { if (s.entry && s.entry.price != null && i > lastIdx) lastIdx = i; });
+      });
+      p.lastSeen = lastIdx >= 0 ? weeks[lastIdx].date : null;
+      p.last = {};
+      banners.forEach(b => {
+        const s = lastIdx >= 0 ? p.series[b][lastIdx] : null;
+        p.last[b] = s && s.entry && s.entry.price != null ? s.entry : null;
+      });
     });
+
+    // Split active vs retired. Retired products keep their history but are left
+    // out of `products`, so counts, filters, deals and the cart ignore them.
+    const retiredIds = retiredMap || {};
+    const products = [], retired = [];
+    allProducts.forEach(p => {
+      if (Object.prototype.hasOwnProperty.call(retiredIds, p.productId)) {
+        p.retired = true;
+        p.retiredOn = parseISODate(retiredIds[p.productId]);
+        retired.push(p);
+      } else {
+        products.push(p);
+      }
+    });
+    retired.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
 
     return {
       banners,
@@ -197,6 +261,7 @@
       currentWeek,
       prevWeek,
       products,
+      retired,
       productsById,
     };
   }
@@ -214,9 +279,9 @@
       fetch('data/products.md?_=' + Date.now()).then(r => { if (!r.ok) throw new Error('products.md ' + r.status); return r.text(); }),
     ]);
     const priceRows = parseCSV(csvText);
-    const productMeta = parseProductsMD(mdText);
-    return buildModel(priceRows, productMeta);
+    const { meta, retired } = parseProductsMD(mdText);
+    return buildModel(priceRows, meta, retired);
   }
 
-  window.GroceryData = { loadData, parseCSV, parseProductsMD, fmtShort };
+  window.GroceryData = { loadData, parseCSV, parseProductsMD, fmtShort, compareValue };
 })();

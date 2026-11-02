@@ -30,6 +30,14 @@ function bannerAbbr(b) {
   })[b] || b.slice(0,3).toUpperCase();
 }
 
+// ---------- Retired label ----------
+// "Retired Nov 1 · prices as of Oct 29"
+function retiredNote(p) {
+  const parts = ['Retired' + (p.retiredOn ? ' ' + GroceryData.fmtShort(p.retiredOn) : '')];
+  if (p.lastSeen) parts.push('prices as of ' + GroceryData.fmtShort(p.lastSeen));
+  return parts.join(' · ');
+}
+
 // ---------- Star button ----------
 const STAR_PATH = 'M8,1 L9.8,5.6 L14.7,5.8 L10.9,8.9 L12.1,13.7 L8,11 L3.9,13.7 L5.2,8.9 L1.3,5.8 L6.2,5.6Z';
 function StarBtn({ pid, starred, onToggle }) {
@@ -126,7 +134,7 @@ function PriceHistoryTooltip({ product, weeks, anchorRect, onClose }) {
 
     const datasets = PH_BANNER_ORDER.map(banner => {
       const series = product.series[banner] || [];
-      const data = series.map(s => (s.entry && s.entry.price != null) ? s.entry.price : null);
+      const data = series.map(s => (s.entry && s.entry.price != null) ? GroceryData.compareValue(product, s.entry) : null);
       if (!data.some(v => v != null)) return null;
       const lastIdx = data.reduce((acc, v, i) => v != null ? i : acc, -1);
       return {
@@ -135,7 +143,7 @@ function PriceHistoryTooltip({ product, weeks, anchorRect, onClose }) {
         borderColor: PH_COLORS[banner],
         backgroundColor: PH_COLORS[banner],
         borderWidth: 2,
-        tension: 0.06,
+        tension: 0.03,
         cubicInterpolationMode: 'monotone',
         spanGaps: false,
         pointRadius: data.map((_, i) => i === lastIdx ? 3 : 0),
@@ -153,7 +161,7 @@ function PriceHistoryTooltip({ product, weeks, anchorRect, onClose }) {
         layout: { padding: { left: 4, right: 82, top: 6, bottom: 4 } },
         plugins: {
           legend: { display: false },
-          tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmtMoney(ctx.parsed.y)}` } }
+          tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmtMoney(ctx.parsed.y)}${product.byWeight ? '/kg' : ''}` } }
         },
         scales: { x: { display: false }, y: { display: false } }
       }
@@ -175,7 +183,7 @@ function PriceHistoryTooltip({ product, weeks, anchorRect, onClose }) {
   return (
     <div className="ph-tooltip" style={style}>
       <div className="ph-hd">
-        <div className="ph-title">{product.title}</div>
+        <div className="ph-title">{product.title}{product.byWeight ? ' · per kg' : ''}</div>
         <button className="ph-close" onClick={onClose}>✕</button>
       </div>
       <canvas ref={canvasRef} width="272" height="120" />
@@ -184,8 +192,8 @@ function PriceHistoryTooltip({ product, weeks, anchorRect, onClose }) {
 }
 
 // ---------- Sparkline ----------
-function Sparkline({ series, cheapest }) {
-  const pts = series.filter(s => s.entry && s.entry.price != null).map(s => s.entry.price);
+function Sparkline({ series, cheapest, byWeight }) {
+  const pts = series.filter(s => s.entry && s.entry.price != null).map(s => GroceryData.compareValue({ byWeight }, s.entry));
   if (pts.length < 2) return null;
   const min = Math.min(...pts), max = Math.max(...pts);
   const range = max - min || 1;
@@ -208,17 +216,21 @@ function Sparkline({ series, cheapest }) {
 }
 
 // ---------- Price Cell ----------
-function PriceCell({ entry, prevEntry, isCheapest, series }) {
+function PriceCell({ entry, prevEntry, isCheapest, series, historic, byWeight }) {
   if (!entry || entry.price == null) {
     return <div className="na">—</div>;
   }
   const { whole, cents } = splitMoney(entry.price);
-  const onSale = entry.wasPrice != null && entry.wasPrice > entry.price;
+  // historic = a retired product's last-known price: no sale/promo/trend details
+  const onSale = !historic && entry.wasPrice != null && entry.wasPrice > entry.price;
   let trend = null;
   if (prevEntry && prevEntry.price != null) {
-    const d = entry.price - prevEntry.price;
+    // by-weight products trend on their per-kg price
+    const cur = GroceryData.compareValue({ byWeight }, entry);
+    const prev = GroceryData.compareValue({ byWeight }, prevEntry);
+    const d = cur - prev;
     if (Math.abs(d) >= 0.01) {
-      const pct = (d / prevEntry.price) * 100;
+      const pct = (d / prev) * 100;
       const dir = d > 0 ? 'up' : 'down';
       const arrow = d > 0 ? '↑' : '↓';
       trend = <div className={`trend ${dir}`}>{arrow} {Math.abs(pct).toFixed(0)}%</div>;
@@ -233,7 +245,7 @@ function PriceCell({ entry, prevEntry, isCheapest, series }) {
       {entry.unitPrice != null && entry.unitBasis && (
         <div className="unit">{fmtMoney(entry.unitPrice)}/{entry.unitBasis}</div>
       )}
-      {entry.dealType && (
+      {!historic && entry.dealType && (
         <div className={`deal-tag ${entry.dealType.toLowerCase()}`}>
           {entry.dealType === 'MULTI' ? (entry.dealText || 'MULTI') : entry.dealType}
         </div>
@@ -241,11 +253,11 @@ function PriceCell({ entry, prevEntry, isCheapest, series }) {
       {entry.dealType === 'MULTI' && entry.dealText && entry.dealType !== 'MULTI' && (
         <div className="deal-expiry">{entry.dealText}</div>
       )}
-      {entry.dealExpiry && (
+      {!historic && entry.dealExpiry && (
         <div className="deal-expiry">exp {GroceryData.fmtShort(entry.dealExpiry)}</div>
       )}
       {trend}
-      <Sparkline series={series} cheapest={isCheapest} />
+      <Sparkline series={series} cheapest={isCheapest} byWeight={byWeight} />
     </>
   );
 }
@@ -255,6 +267,7 @@ function CompareTable({ model, filter, search, cart, onToggle, sort, starred, on
   const { banners, products } = model;
   const [tsOpen, setTsOpen] = useState(true);
   const [toOpen, setToOpen] = useState(true);
+  const [trOpen, setTrOpen] = useState(false);
 
   let visible = products.slice();
   if (search) {
@@ -287,8 +300,18 @@ function CompareTable({ model, filter, search, cart, onToggle, sort, starred, on
     visible.sort((a,b) => (a.title||'').localeCompare(b.title||''));
   }
 
-  const hasGroups = starred.size > 0;
+  const hasGroups = products.some(p => starred.has(p.productId));
   const starredList = hasGroups ? visible.filter(p => starred.has(p.productId)) : [];
+
+  // Retired products: shown only on the unfiltered view, matched by search, A–Z
+  let retiredList = filter === 'all' ? (model.retired || []) : [];
+  if (search) {
+    const q = search.toLowerCase();
+    retiredList = retiredList.filter(p =>
+      (p.title||'').toLowerCase().includes(q) ||
+      (p.brand||'').toLowerCase().includes(q)
+    );
+  }
   const otherList   = hasGroups ? visible.filter(p => !starred.has(p.productId)) : visible;
 
   function renderRow(p) {
@@ -320,7 +343,33 @@ function CompareTable({ model, filter, search, cart, onToggle, sort, starred, on
               prevEntry={p.previous[b]}
               isCheapest={p.cheapestBanner === b}
               series={p.series[b]}
+              byWeight={p.byWeight}
             />
+          </td>
+        ))}
+      </tr>
+    );
+  }
+
+  function renderRetiredRow(p) {
+    return (
+      <tr key={p.productId} className="retired-row">
+        <td className="prod-cell">
+          <div className="prod-hd">
+            <span className="star-spacer" />
+            <div>
+              <div className="prod-name">{p.title}</div>
+              <div className="prod-meta">
+                {p.brand && <span className="brand">{p.brand}</span>}
+                <span>{p.size}{p.unit ? ' · ' + p.unit : ''}</span>
+              </div>
+              <div className="retired-note">{retiredNote(p)}</div>
+            </div>
+          </div>
+        </td>
+        {banners.map(b => (
+          <td key={b} className="banner-cell">
+            <PriceCell entry={p.last[b]} prevEntry={null} isCheapest={false} series={p.series[b]} historic byWeight={p.byWeight} />
           </td>
         ))}
       </tr>
@@ -362,7 +411,13 @@ function CompareTable({ model, filter, search, cart, onToggle, sort, starred, on
           ) : (
             visible.map(renderRow)
           )}
-          {!visible.length && (
+          {retiredList.length > 0 && (
+            <>
+              {renderGroupHdr('Retired', retiredList.length, trOpen, () => setTrOpen(o => !o))}
+              {trOpen && retiredList.map(renderRetiredRow)}
+            </>
+          )}
+          {!visible.length && !retiredList.length && (
             <tr><td colSpan={banners.length + 1} style={{padding: '40px', textAlign: 'center', color: 'var(--ink-3)', fontStyle: 'italic'}}>No products match.</td></tr>
           )}
         </tbody>
@@ -449,7 +504,11 @@ function DealsView({ model }) {
         {ranked.map(({p, best, kind}, i) => {
           const entry = p.current[best.banner];
           const prev = kind === 'sale' ? null : p.previous[best.banner];
-          const wasAmt = kind === 'sale' ? entry?.wasPrice : prev?.price;
+          // by-weight week-over-week drops are shown per kg
+          const perKg = kind === 'drop' && p.byWeight && entry.unitPrice != null && prev?.unitPrice != null;
+          const wasAmt = kind === 'sale' ? entry?.wasPrice : (perKg ? prev.unitPrice : prev?.price);
+          const nowAmt = perKg ? entry.unitPrice : entry.price;
+          const per = perKg ? '/kg' : '';
           return (
             <li className="deal-row" key={p.productId}>
               <div>
@@ -464,7 +523,7 @@ function DealsView({ model }) {
               <div className="right">
                 <div className="savings-pct">−{Math.round(best.pct * 100)}%</div>
                 <div className="prices">
-                  {wasAmt != null && <span className="was">{fmtMoney(wasAmt)}</span>} {fmtMoney(entry.price)}
+                  {wasAmt != null && <span className="was">{fmtMoney(wasAmt)}{per}</span>} {fmtMoney(nowAmt)}{per}
                 </div>
               </div>
             </li>
@@ -486,6 +545,7 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
   const [historyAnchorRect, setHistoryAnchorRect] = useState(null);
   const [csOpen, setCsOpen] = useState(true);
   const [coOpen, setCoOpen] = useState(false);
+  const [crOpen, setCrOpen] = useState(false);
   const [cartExpanded, setCartExpanded] = useState(false);
 
   function toggleCollapse(banner) {
@@ -539,8 +599,10 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
   function computeSplit() {
     const itemPlacements = cartProducts.map(({p, qty}) => {
       // options
-      const options = banners.map(b => ({ banner: b, price: p.current[b]?.price })).filter(o => o.price != null);
-      options.sort((a,b) => a.price - b.price);
+      // rank = per-kg price for by-weight products, package price otherwise
+      const options = banners.filter(b => p.current[b]?.price != null)
+        .map(b => ({ banner: b, price: p.current[b].price, rank: GroceryData.compareValue(p, p.current[b]) }));
+      options.sort((a,b) => a.rank - b.rank);
       return { p, qty, options };
     }).filter(x => x.options.length);
 
@@ -654,7 +716,9 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
                   {items.map(({p, qty, options}) => {
                     const e = options.find(o => o.banner === banner);
                     const cheapest = options[0];
-                    const premium = (banner !== cheapest.banner) ? (e.price - cheapest.price) * qty : 0;
+                    // by-weight: extra paid for this package vs the cheapest per-kg rate
+                    const premium = banner === cheapest.banner ? 0
+                      : (p.byWeight && e.rank !== e.price ? (e.rank - cheapest.rank) * (e.price / e.rank) : e.price - cheapest.price) * qty;
                     return (
                       <li key={p.productId}>
                         <span className="nm">{qty}× {p.title}</span>
@@ -711,14 +775,17 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
           {(() => {
             function renderProduct(p) {
               const qty = cart[p.productId] || 0;
-              const opts = model.banners.map(b => ({ b, price: p.current[b]?.price }))
+              const opts = model.banners.map(b => ({ b, price: p.current[b]?.price, rank: GroceryData.compareValue(p, p.current[b]) }))
                 .filter(o => o.price != null)
                 .sort((a, b) => {
                   const ia = PICKER_ORDER.indexOf(a.b), ib = PICKER_ORDER.indexOf(b.b);
                   return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
                 });
               if (!opts.length) return null;
-              const cheapestPrice = Math.min(...opts.map(o => o.price));
+              // by-weight products are compared per kg; premiums then read "+$x/kg"
+              const cheapestRank = Math.min(...opts.map(o => o.rank));
+              const tol = p.byWeight ? 0.005 : 0.05;
+              const per = p.byWeight ? '/kg' : '';
               const chosen = manualChoices[p.productId] || p.cheapestBanner;
               return (
                 <div className="cart-product" key={p.productId}>
@@ -728,9 +795,9 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
                       <div>
                         <div className="name">{p.title}{p.brand ? ` · ${p.brand}` : ''}</div>
                         <div className="banners">
-                          {opts.map(({b, price}) => {
-                            const isCheapest = price <= cheapestPrice + 0.05;
-                            const premium = price > cheapestPrice + 0.05 ? price - cheapestPrice : 0;
+                          {opts.map(({b, price, rank}) => {
+                            const isCheapest = rank <= cheapestRank + tol;
+                            const premium = rank > cheapestRank + tol ? rank - cheapestRank : 0;
                             return (
                               <span
                                 key={b}
@@ -739,7 +806,7 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
                                 style={{cursor: mode === 'manual' ? 'pointer' : 'default'}}
                               >
                                 {bannerAbbr(b)} <span className="p">{fmtMoney(price)}</span>
-                                {premium > 0.005 && <span className="opt-premium">+{fmtMoney(premium)}</span>}
+                                {premium > 0.005 && <span className="opt-premium">+{fmtMoney(premium)}{per}</span>}
                               </span>
                             );
                           })}
@@ -765,8 +832,61 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
               );
             }
 
-            const hasGroups = starred.size > 0;
-            if (!hasGroups) return products.map(renderProduct);
+            // Retired products: last-known prices and history only; can't be added to the cart
+            function renderRetired(p) {
+              const opts = model.banners.map(b => ({ b, price: p.last[b]?.price }))
+                .filter(o => o.price != null)
+                .sort((a, b) => {
+                  const ia = PICKER_ORDER.indexOf(a.b), ib = PICKER_ORDER.indexOf(b.b);
+                  return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+                });
+              return (
+                <div className="cart-product retired" key={p.productId}>
+                  <div className="info">
+                    <div className="cart-prod-hd">
+                      <span className="star-spacer" />
+                      <div>
+                        <div className="name">{p.title}{p.brand ? ` · ${p.brand}` : ''}</div>
+                        <div className="banners">
+                          {opts.map(({b, price}) => (
+                            <span key={b} className="opt">
+                              {bannerAbbr(b)} <span className="p">{fmtMoney(price)}</span>
+                            </span>
+                          ))}
+                        </div>
+                        <div className="retired-note">{retiredNote(p)}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    className={`cart-hist-btn${historyPid === p.productId ? ' on' : ''}`}
+                    onClick={e => openHistory(p.productId, e)}
+                    title="Price history"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="0.5,11.5 3.5,6.5 6.5,9 9.5,2.5 12.5,5.5"/>
+                    </svg>
+                  </button>
+                  <span className="retired-tag">Retired</span>
+                </div>
+              );
+            }
+
+            const retiredProds = model.retired || [];
+            const retiredGroup = retiredProds.length > 0 && (
+              <>
+                <button className={`group-hdr retired-hdr${crOpen ? ' open' : ''}`} onClick={() => setCrOpen(o => !o)}>
+                  <span>Retired <span className="group-count">({retiredProds.length})</span></span>
+                  <span className="group-chev">▾</span>
+                </button>
+                <div className={`cart-group-body${crOpen ? '' : ' closed'}`}>
+                  {retiredProds.map(renderRetired)}
+                </div>
+              </>
+            );
+
+            const hasGroups = products.some(p => starred.has(p.productId));
+            if (!hasGroups) return <>{products.map(renderProduct)}{retiredGroup}</>;
 
             const starredProds = products.filter(p => starred.has(p.productId));
             const otherProds   = products.filter(p => !starred.has(p.productId));
@@ -786,6 +906,7 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
                 <div className={`cart-group-body${coOpen ? '' : ' closed'}`}>
                   {otherProds.map(renderProduct)}
                 </div>
+                {retiredGroup}
               </>
             );
           })()}
@@ -797,7 +918,7 @@ function CartView({ model, cart, setCart, manualChoices, setManualChoices, mode,
         </div>
 
         {historyPid && (() => {
-          const hp = products.find(x => x.productId === historyPid);
+          const hp = model.productsById[historyPid];
           return hp ? <PriceHistoryTooltip product={hp} weeks={model.weeks} anchorRect={historyAnchorRect} onClose={closeHistory} /> : null;
         })()}
       </div>
@@ -868,6 +989,20 @@ function App() {
   useEffect(() => { localStorage.setItem('dailyloonie_manual_v1', JSON.stringify(manualChoices)); }, [manualChoices]);
   useEffect(() => { localStorage.setItem('dailyloonie_mode_v1', mode); }, [mode]);
   useEffect(() => { localStorage.setItem('dailyloonie_starred_v1', JSON.stringify([...starred])); }, [starred]);
+
+  // Retired products can't be bought — drop them from a saved cart and manual choices
+  useEffect(() => {
+    if (!model || !model.retired.length) return;
+    const ids = model.retired.map(p => p.productId);
+    const prune = obj => {
+      if (!ids.some(id => id in obj)) return obj;
+      const next = {...obj};
+      ids.forEach(id => { delete next[id]; });
+      return next;
+    };
+    setCart(prune);
+    setManualChoices(prune);
+  }, [model]);
 
   function toggleCart(pid) {
     setCart(c => {
@@ -978,7 +1113,7 @@ function App() {
       )}
 
       <div className="footer-note">
-        <span>{products.length} products tracked · {model.weeks.length} weeks on record</span>
+        <span>{products.length} products tracked{model.retired.length ? ` · ${model.retired.length} retired` : ''} · {model.weeks.length} weeks on record</span>
       </div>
     </div>
   );

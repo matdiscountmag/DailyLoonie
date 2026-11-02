@@ -1207,3 +1207,28 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   flex-wrap: wrap;
   gap: 12px;
 }
+
+/* ---- retired products ---- */
+.star-spacer { width: 24px; height: 24px; flex-shrink: 0; }
+.retired-note {
+  margin-top: 4px;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--ink-3);
+}
+.compare tr.retired-row td { background: var(--bg-sunk); }
+.compare tr.retired-row .prod-name,
+.compare tr.retired-row .price { color: var(--ink-3); }
+.cart-product + .group-hdr { margin-top: 12px; }
+.cart-product.retired .info .name,
+.cart-product.retired .info .banners .opt { color: var(--ink-3); }
+.cart-product.retired .info .banners .opt { cursor: default; }
+.retired-tag {
+  min-width: 92px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--ink-4);
+}
